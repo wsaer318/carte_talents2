@@ -148,11 +148,15 @@ export default function Register() {
                 }
             )
 
+            console.log('SignUp Response:', { data, signUpError })
+
             if (signUpError) throw signUpError
 
+            // Cas 1: Session créée immédiatement (email confirmation désactivée)
             if (data.user && data.session) {
-                // CRITIQUE: Établir explicitement la session dans le client Supabase
-                // pour que auth.uid() fonctionne dans l'appel RPC
+                console.log('Session créée, appel RPC...')
+
+                // Établir explicitement la session dans le client Supabase
                 await supabase.auth.setSession({
                     access_token: data.session.access_token,
                     refresh_token: data.session.refresh_token
@@ -173,13 +177,25 @@ export default function Register() {
                     }))
                 }
 
-                // Appel RPC pour tout mettre à jour d'un coup de manière sécurisée
+                console.log('Appel RPC avec:', rpcData)
+
+                // Appel RPC pour tout mettre à jour d'un coup
                 const { error: rpcError } = await supabase.rpc('update_full_profile', rpcData)
 
-                if (rpcError) throw rpcError
-            }
+                if (rpcError) {
+                    console.error('Erreur RPC:', rpcError)
+                    throw rpcError
+                }
 
-            navigate('/dashboard')
+                console.log('RPC Success, redirection vers /dashboard')
+                navigate('/dashboard')
+            }
+            // Cas 2: Pas de session (email confirmation requise)
+            else if (data.user && !data.session) {
+                console.log('Confirmation email requise. User créé mais pas de session.')
+                setError('Inscription réussie ! Veuillez vérifier votre email pour confirmer votre compte.')
+                // On reste sur la page d'inscription pour afficher le message
+            }
         } catch (error) {
             console.error('Erreur inscription:', error)
             setError(error.message)
