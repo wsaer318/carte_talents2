@@ -3,8 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { localStorageService } from '../../lib/localStorage'
 import { validateDemoLogin } from '../../lib/demoAccounts'
-import { supabase } from '../../lib/supabase'
-import { LogIn } from 'lucide-react'
+import { LogIn, ArrowRight } from 'lucide-react'
 
 export default function Login() {
     const navigate = useNavigate()
@@ -34,15 +33,9 @@ export default function Login() {
             const demoAuth = validateDemoLogin(formData.email, formData.password)
 
             if (demoAuth) {
-                // Connexion réussie avec un compte de démo
                 localStorageService.setCurrentUser(demoAuth.user)
-
-                console.log('✅ Connexion réussie (mode démo):', demoAuth.profile)
-
-                // Redirection
                 window.location.href = '/dashboard'
             } else {
-                // Aucun compte de démo ne correspond, vérifier dans les profils enregistrés
                 const profiles = localStorageService.getAllProfiles()
                 const userProfile = profiles.find(p => p.email === formData.email)
 
@@ -50,14 +43,10 @@ export default function Login() {
                     throw new Error('Email ou mot de passe incorrect.')
                 }
 
-                // Pour les comptes créés via inscription (sans mot de passe stocké)
-                // On accepte n'importe quel mot de passe pour la démo
                 localStorageService.setCurrentUser({
                     id: userProfile.id,
                     email: userProfile.email
                 })
-
-                console.log('✅ Connexion réussie:', userProfile)
                 window.location.href = '/dashboard'
             }
         } catch (error) {
@@ -68,29 +57,35 @@ export default function Login() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-md w-full space-y-8">
+        <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+            {/* Background Glows */}
+            <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-cyan-500/10 blur-[100px] rounded-full pointer-events-none" />
+            <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-blue-600/10 blur-[100px] rounded-full pointer-events-none" />
+
+            <div className="max-w-md w-full space-y-8 relative z-10 glass-panel p-8 md:p-10 rounded-2xl animate-fade-in border border-white/5">
                 <div className="text-center">
-                    <LogIn className="mx-auto h-12 w-12 text-primary-600" />
-                    <h2 className="mt-6 text-3xl font-bold text-gray-900">
+                    <div className="mx-auto h-16 w-16 bg-cyan-950/50 rounded-2xl flex items-center justify-center border border-cyan-500/20 mb-6 shadow-[0_0_15px_rgba(34,211,238,0.1)]">
+                        <LogIn className="h-8 w-8 text-cyan-400" />
+                    </div>
+                    <h2 className="text-3xl font-bold text-white font-display">
                         Connexion
                     </h2>
-                    <p className="mt-2 text-sm text-gray-600">
-                        Accédez à votre espace personnel
+                    <p className="mt-2 text-sm text-slate-400">
+                        Accédez au portail du Village NIRD
                     </p>
                 </div>
 
                 <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
                     {error && (
-                        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded">
+                        <div className="bg-red-500/10 border border-red-500/20 text-red-200 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-red-400"></span>
                             {error}
                         </div>
                     )}
 
                     <div className="space-y-4">
-                        {/* Email */}
                         <div>
-                            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                            <label htmlFor="email" className="label-dark">
                                 Email
                             </label>
                             <input
@@ -100,13 +95,13 @@ export default function Login() {
                                 required
                                 value={formData.email}
                                 onChange={handleChange}
-                                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                                className="input-dark w-full"
+                                placeholder="exemple@ecole.fr"
                             />
                         </div>
 
-                        {/* Password */}
                         <div>
-                            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                            <label htmlFor="password" className="label-dark">
                                 Mot de passe
                             </label>
                             <input
@@ -116,7 +111,8 @@ export default function Login() {
                                 required
                                 value={formData.password}
                                 onChange={handleChange}
-                                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                                className="input-dark w-full"
+                                placeholder="••••••••"
                             />
                         </div>
                     </div>
@@ -124,15 +120,16 @@ export default function Login() {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:-translate-y-0.5"
                     >
-                        {loading ? 'Connexion en cours...' : 'Se connecter'}
+                        {loading ? 'Connexion...' : 'Se connecter'}
+                        {!loading && <ArrowRight className="h-4 w-4" />}
                     </button>
 
-                    <p className="text-center text-sm text-gray-600">
+                    <p className="text-center text-sm text-slate-400">
                         Pas encore membre ?{' '}
-                        <Link to="/register" className="font-medium text-primary-600 hover:text-primary-500">
-                            S'inscrire
+                        <Link to="/register" className="font-medium text-cyan-400 hover:text-cyan-300 transition-colors">
+                            Rejoindre le réseau
                         </Link>
                     </p>
                 </form>

@@ -4,6 +4,7 @@ import { localStorageService } from '../../lib/localStorage'
 import ProfileModal from './ProfileModal'
 import CollaborationForm from '../collaboration/CollaborationForm'
 import { useAuth } from '../../hooks/useAuth'
+import { useToast } from '../../contexts/ToastContext'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
@@ -50,6 +51,7 @@ export default function InteractiveMap({ filters }) {
     const [selectedUser, setSelectedUser] = useState(null)
     const [collaborationTarget, setCollaborationTarget] = useState(null)
     const { user } = useAuth()
+    const toast = useToast()
 
     useEffect(() => {
         const profiles = localStorageService.getAllProfiles()
@@ -110,8 +112,8 @@ export default function InteractiveMap({ filters }) {
         collaborations.push(newCollaboration)
         localStorage.setItem('demo_collaborations', JSON.stringify(collaborations))
 
-        // Afficher un message de succès
-        alert(`✅ Demande de collaboration envoyée à ${collaborationTarget.prenom} ${collaborationTarget.nom} !`)
+        // Toast de succès au lieu d'alert
+        toast.success(`Demande envoyée à ${collaborationTarget.prenom} ${collaborationTarget.nom} !`)
         setCollaborationTarget(null)
     }
 

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { MapPin, Users, Award, TrendingUp } from 'lucide-react'
+import { MapPin, Users, Award, Zap, Activity, Globe } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { localStorageService } from '../lib/localStorage'
 
@@ -13,155 +13,125 @@ export default function Home() {
 
     const fetchCarbonImpact = async () => {
         try {
-            // MODE DÉMO : Récupérer les projets depuis localStorage
             const profiles = localStorageService.getAllProfiles()
-
             let total = 0
             profiles.forEach(profile => {
                 if (profile.projects && Array.isArray(profile.projects)) {
                     total += profile.projects.reduce((sum, p) => sum + (p.impact_carbone || 0), 0)
                 }
             })
-
             setTotalImpact(total)
         } catch (error) {
-            console.error('Erreur lors du calcul de l\'impact carbone:', error)
+            console.error('Erreur', error)
         } finally {
             setLoading(false)
         }
     }
 
+    const membersCount = localStorageService.getAllProfiles().filter(p => p.badge_verified).length
+    const projectsCount = localStorageService.getAllProfiles().reduce((sum, p) => sum + (p.projects?.length || 0), 0)
+
     return (
         <div className="min-h-screen">
-            {/* Hero Section */}
-            <section className="relative overflow-hidden">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-                    <div className="text-center animate-fade-in">
-                        <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
-                            L'Agora du Village NIRD
-                        </h1>
-                        <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-                            Une plateforme souveraine et éco-conçue pour connecter les talents
-                            du numérique responsable aux établissements scolaires
-                        </p>
+            {/* HERO SECTION */}
+            <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
+                {/* Background Glows */}
+                <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-cyan-500/20 blur-[100px] rounded-full mix-blend-screen animate-pulse-glow" />
+                <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] bg-blue-600/20 blur-[120px] rounded-full mix-blend-screen animate-pulse-glow" style={{ animationDelay: '1s' }} />
 
-                        {/* Compteur Global CO2 - Feature Signature */}
-                        <div className="glass-effect rounded-2xl p-8 max-w-md mx-auto mb-12 shadow-xl">
-                            <TrendingUp className="h-12 w-12 text-green-600 mx-auto mb-4" />
-                            <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                                {loading ? (
-                                    <span className="animate-pulse">Calcul...</span>
-                                ) : (
-                                    <>{(totalImpact / 1000).toFixed(1)} tonnes</>
-                                )}
-                            </h2>
-                            <p className="text-gray-600">
-                                de CO₂ évitées par le Village
-                            </p>
-                        </div>
+                <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-cyan-500/30 bg-cyan-950/30 text-cyan-400 text-sm font-medium mb-8 animate-slide-up">
+                        <Zap className="h-4 w-4" />
+                        <span>Nuit de l'Info 2025</span>
+                    </div>
 
-                        {/* CTA Buttons */}
-                        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                            <Link
-                                to="/register"
-                                className="bg-primary-600 text-white px-8 py-3 rounded-lg hover:bg-primary-700 transition text-lg font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                            >
-                                Rejoindre le réseau
-                            </Link>
-                            <Link
-                                to="/map"
-                                className="bg-white text-primary-600 px-8 py-3 rounded-lg border-2 border-primary-600 hover:bg-primary-50 transition text-lg font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                            >
-                                Accéder à la carte
-                            </Link>
+                    <h1 className="text-6xl md:text-8xl font-black mb-6 tracking-tight animate-slide-up" style={{ animationDelay: '0.1s' }}>
+                        <span className="text-white">AGORA</span>
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-green-400">NIRD</span>
+                    </h1>
+
+                    <p className="text-xl md:text-2xl text-slate-400 mb-10 max-w-3xl mx-auto leading-relaxed animate-slide-up" style={{ animationDelay: '0.2s' }}>
+                        Le réseau souverain qui connecte les <span className="text-cyan-400">experts du numérique</span> aux <span className="text-green-400">générations futures</span>.
+                    </p>
+
+                    <div className="flex flex-col sm:flex-row gap-6 justify-center items-center animate-slide-up" style={{ animationDelay: '0.3s' }}>
+                        <Link to="/register" className="btn-primary flex items-center gap-2 group px-8 py-4 text-lg">
+                            Rejoindre le Mouvement
+                            <Zap className="h-5 w-5 group-hover:fill-current transition-all" />
+                        </Link>
+                        <Link to="/map" className="btn-neon flex items-center gap-2 px-8 py-4 text-lg">
+                            Explorer la Carte
+                            <Globe className="h-5 w-5" />
+                        </Link>
+                    </div>
+
+                    {/* Signature Feature: CO2 Counter */}
+                    <div className="mt-20 glass-panel inline-block rounded-3xl p-1 border border-white/10 animate-slide-up" style={{ animationDelay: '0.4s' }}>
+                        <div className="bg-slate-950/50 rounded-[1.3rem] px-10 py-6 border border-white/5 backdrop-blur-md">
+                            <p className="text-slate-400 text-sm uppercase tracking-widest mb-2 font-semibold">Impact Carbone Collectif</p>
+                            <div className="flex items-baseline justify-center gap-2">
+                                <span className="text-5xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-cyan-400 font-display">
+                                    {(totalImpact / 1000).toFixed(1)}
+                                </span>
+                                <span className="text-2xl text-slate-500 font-bold">tonnes CO₂</span>
+                            </div>
                         </div>
                     </div>
                 </div>
             </section>
 
-            {/* Features Section */}
-            <section className="bg-white py-20">
+            {/* STATS GRID */}
+            <section className="py-20 relative">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
-                        Pourquoi rejoindre l'Agora ?
-                    </h2>
+                    <div className="grid md:grid-cols-3 gap-6">
+                        {[
+                            { label: "Membres Actifs", val: membersCount, icon: Users, color: "text-blue-400" },
+                            { label: "Projets Réalisés", val: projectsCount, icon: Activity, color: "text-purple-400" },
+                            { label: "Établissements", val: "12", icon: MapPin, color: "text-pink-400" }
+                        ].map((stat, idx) => (
+                            <div key={idx} className="card-hover p-8 group">
+                                <stat.icon className={`h-8 w-8 ${stat.color} mb-4 group-hover:scale-110 transition-transform`} />
+                                <h3 className="text-4xl font-bold text-white mb-2">{stat.val}</h3>
+                                <p className="text-slate-400 font-medium">{stat.label}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* FEATURES */}
+            <section className="py-24 relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-cyan-900/10 to-transparent pointer-events-none" />
+
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="text-center mb-16">
+                        <h2 className="text-3xl md:text-5xl font-bold mb-6">
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                                Pourquoi rejoindre l'Agora ?
+                            </span>
+                        </h2>
+                        <p className="text-slate-400 max-w-2xl mx-auto text-lg">
+                            Une plateforme conçue pour l'impact, la collaboration et la souveraineté numérique.
+                        </p>
+                    </div>
 
                     <div className="grid md:grid-cols-3 gap-8">
-                        {/* Feature 1 */}
-                        <div className="text-center p-6 rounded-xl hover:shadow-lg transition">
-                            <div className="bg-primary-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <MapPin className="h-8 w-8 text-primary-600" />
+                        {[
+                            { title: "Cartographie Souveraine", desc: "Localisez les experts sans traqueurs ni cookies tiers.", icon: MapPin },
+                            { title: "Réseau de Confiance", desc: "Profils vérifiés par des badges de compétence.", icon: Award },
+                            { title: "Impact Mesurable", desc: "Suivez votre empreinte écologique en temps réel.", icon: Activity },
+                        ].map((feature, idx) => (
+                            <div key={idx} className="glass-panel p-8 rounded-2xl border-t border-white/10 hover:border-cyan-500/30 transition-colors group">
+                                <div className="w-14 h-14 bg-slate-800/50 rounded-xl flex items-center justify-center mb-6 group-hover:bg-cyan-500/20 transition-colors">
+                                    <feature.icon className="h-7 w-7 text-cyan-400" />
+                                </div>
+                                <h3 className="text-xl font-bold text-white mb-3">{feature.title}</h3>
+                                <p className="text-slate-400 leading-relaxed">
+                                    {feature.desc}
+                                </p>
                             </div>
-                            <h3 className="text-xl font-semibold mb-3">Cartographie Interactive</h3>
-                            <p className="text-gray-600">
-                                Visualisez et contactez les talents du numérique responsable près de chez vous
-                            </p>
-                        </div>
-
-                        {/* Feature 2 */}
-                        <div className="text-center p-6 rounded-xl hover:shadow-lg transition">
-                            <div className="bg-primary-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <Users className="h-8 w-8 text-primary-600" />
-                            </div>
-                            <h3 className="text-xl font-semibold mb-3">Réseau de Confiance</h3>
-                            <p className="text-gray-600">
-                                Profils vérifiés et certifiés par la communauté pour garantir la qualité
-                            </p>
-                        </div>
-
-                        {/* Feature 3 */}
-                        <div className="text-center p-6 rounded-xl hover:shadow-lg transition">
-                            <div className="bg-primary-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <Award className="h-8 w-8 text-primary-600" />
-                            </div>
-                            <h3 className="text-xl font-semibold mb-3">Impact Mesurable</h3>
-                            <p className="text-gray-600">
-                                Suivez votre contribution à l'économie de CO₂ et au numérique responsable
-                            </p>
-                        </div>
+                        ))}
                     </div>
-                </div>
-            </section>
-
-            {/* Stats Section */}
-            <section className="bg-gradient-to-r from-primary-600 to-primary-800 py-16">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="grid md:grid-cols-3 gap-8 text-center text-white">
-                        <div className="animate-fade-in">
-                            <p className="text-5xl font-bold mb-2">
-                                {localStorageService.getAllProfiles().filter(p => p.badge_verified).length}
-                            </p>
-                            <p className="text-primary-100">Membres actifs</p>
-                        </div>
-                        <div className="animate-fade-in" style={{ animationDelay: '0.1s' }}>
-                            <p className="text-5xl font-bold mb-2">
-                                {localStorageService.getAllProfiles().reduce((sum, p) =>
-                                    sum + (p.projects?.length || 0), 0
-                                )}
-                            </p>
-                            <p className="text-primary-100">Projets réalisés</p>
-                        </div>
-                        <div className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
-                            <p className="text-5xl font-bold mb-2">
-                                {(totalImpact / 1000).toFixed(1)}t
-                            </p>
-                            <p className="text-primary-100">de CO₂ économisés</p>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* Mission Section */}
-            <section className="py-20">
-                <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                    <h2 className="text-3xl font-bold text-gray-900 mb-6">
-                        Notre Mission
-                    </h2>
-                    <p className="text-lg text-gray-700 leading-relaxed">
-                        Créer un pont entre les professionnels du numérique responsable et les
-                        établissements scolaires pour partager les connaissances, réparer plutôt
-                        que jeter, et sensibiliser aux enjeux environnementaux du digital.
-                    </p>
                 </div>
             </section>
         </div>
