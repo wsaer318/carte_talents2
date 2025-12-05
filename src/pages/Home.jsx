@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { MapPin, Users, Award, TrendingUp } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { supabase } from '../lib/supabase'
+import { localStorageService } from '../lib/localStorage'
 
 export default function Home() {
     const [totalImpact, setTotalImpact] = useState(0)
@@ -13,13 +13,16 @@ export default function Home() {
 
     const fetchCarbonImpact = async () => {
         try {
-            const { data, error } = await supabase
-                .from('projects')
-                .select('impact_carbone')
+            // MODE DÉMO : Récupérer les projets depuis localStorage
+            const profiles = localStorageService.getAllProfiles()
 
-            if (error) throw error
+            let total = 0
+            profiles.forEach(profile => {
+                if (profile.projects && Array.isArray(profile.projects)) {
+                    total += profile.projects.reduce((sum, p) => sum + (p.impact_carbone || 0), 0)
+                }
+            })
 
-            const total = data.reduce((sum, project) => sum + (project.impact_carbone || 0), 0)
             setTotalImpact(total)
         } catch (error) {
             console.error('Erreur lors du calcul de l\'impact carbone:', error)
@@ -115,6 +118,34 @@ export default function Home() {
                             <p className="text-gray-600">
                                 Suivez votre contribution à l'économie de CO₂ et au numérique responsable
                             </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* Stats Section */}
+            <section className="bg-gradient-to-r from-primary-600 to-primary-800 py-16">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="grid md:grid-cols-3 gap-8 text-center text-white">
+                        <div className="animate-fade-in">
+                            <p className="text-5xl font-bold mb-2">
+                                {localStorageService.getAllProfiles().filter(p => p.badge_verified).length}
+                            </p>
+                            <p className="text-primary-100">Membres actifs</p>
+                        </div>
+                        <div className="animate-fade-in" style={{ animationDelay: '0.1s' }}>
+                            <p className="text-5xl font-bold mb-2">
+                                {localStorageService.getAllProfiles().reduce((sum, p) =>
+                                    sum + (p.projects?.length || 0), 0
+                                )}
+                            </p>
+                            <p className="text-primary-100">Projets réalisés</p>
+                        </div>
+                        <div className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
+                            <p className="text-5xl font-bold mb-2">
+                                {(totalImpact / 1000).toFixed(1)}t
+                            </p>
+                            <p className="text-primary-100">de CO₂ économisés</p>
                         </div>
                     </div>
                 </div>

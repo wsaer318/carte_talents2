@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { supabase } from '../../lib/supabase'
+import { localStorageService } from '../../lib/localStorage'
 import { UserPlus, Plus, Trash2, Check, Star, Globe, Heart, Briefcase } from 'lucide-react'
 
 // Composant pour une liste dynamique (ex: Passions, Langues)
@@ -114,7 +115,7 @@ export default function Register() {
         password: '',
         nom: '',
         prenom: '',
-        role: 'Enseignant',
+        village_role: 'Enseignant',
     })
 
     // Listes dynamiques
@@ -132,6 +133,7 @@ export default function Register() {
         fetchSkills()
     }, [])
 
+
     const handleSubmit = async (e) => {
         e.preventDefault()
         setLoading(true)
@@ -148,53 +150,39 @@ export default function Register() {
                 }
             )
 
-            console.log('SignUp Response:', { data, signUpError })
-
             if (signUpError) throw signUpError
 
-            // Cas 1: Session créée immédiatement (email confirmation désactivée)
-            if (data.user && data.session) {
-                console.log('Session créée, appel RPC...')
-
-                // Établir explicitement la session dans le client Supabase
-                await supabase.auth.setSession({
-                    access_token: data.session.access_token,
-                    refresh_token: data.session.refresh_token
-                })
-
-                // Préparation des données pour l'RPC
-                const rpcData = {
-                    p_nom: formData.nom,
-                    p_prenom: formData.prenom,
-                    p_role: formData.role,
-                    p_skills: skills.map(s => ({ skill_name: s.value, level: s.level })),
-                    p_languages: languages.map(l => ({ language: l.value, level: l.level })),
-                    p_passions: passions.map(p => ({ passion: p.value })),
-                    p_projects: projects.map(p => ({
+            if (data.user) {
+                // MODE DÉMO : Stocker toutes les données dans localStorage
+                const profileData = {
+                    id: data.user.id,
+                    email: formData.email.trim(),
+                    nom: formData.nom,
+                    prenom: formData.prenom,
+                    system_role: 'user', // Par défaut, tous les nouveaux utilisateurs sont des users standard
+                    village_role: formData.village_role,
+                    badge_verified: false, // Par défaut, en attente de validation admin
+                    skills: skills.map(s => ({ skill_name: s.value, level: s.level })),
+                    languages: languages.map(l => ({ language: l.value, level: l.level })),
+                    passions: passions.map(p => p.value),
+                    projects: projects.map(p => ({
                         title: p.title,
                         description: p.description,
                         impact_carbone: 0
-                    }))
+                    })),
+                    preferences: {
+                        mode_sobriete: false,
+                        notifications: true
+                    }
                 }
 
-                console.log('Appel RPC avec:', rpcData)
+                // Sauvegarder le profil
+                localStorageService.saveProfile(profileData)
 
-                // Appel RPC pour tout mettre à jour d'un coup
-                const { error: rpcError } = await supabase.rpc('update_full_profile', rpcData)
+                console.log('✅ Profil sauvegardé en local:', profileData)
 
-                if (rpcError) {
-                    console.error('Erreur RPC:', rpcError)
-                    throw rpcError
-                }
-
-                console.log('RPC Success, redirection vers /dashboard')
+                // Redirection vers dashboard (même sans session Supabase)
                 navigate('/dashboard')
-            }
-            // Cas 2: Pas de session (email confirmation requise)
-            else if (data.user && !data.session) {
-                console.log('Confirmation email requise. User créé mais pas de session.')
-                setError('Inscription réussie ! Veuillez vérifier votre email pour confirmer votre compte.')
-                // On reste sur la page d'inscription pour afficher le message
             }
         } catch (error) {
             console.error('Erreur inscription:', error)
@@ -268,12 +256,11 @@ export default function Register() {
                                 </div>
                                 <div className="sm:col-span-2 space-y-1">
                                     <label className="block text-sm font-medium text-gray-700">Rôle au sein du village</label>
-                                    <select value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value })} className="block w-full bg-white border border-gray-300 rounded-lg shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm py-2.5">
+                                    <select value={formData.village_role} onChange={e => setFormData({ ...formData, village_role: e.target.value })} className="block w-full bg-white border border-gray-300 rounded-lg shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm py-2.5">
                                         <option value="Enseignant">Enseignant</option>
                                         <option value="Technicien">Technicien</option>
                                         <option value="Eco-delegue">Éco-délégué</option>
                                         <option value="Association">Association</option>
-                                        <option value="Administrateur">Administrateur (Test)</option>
                                     </select>
                                 </div>
                             </div>

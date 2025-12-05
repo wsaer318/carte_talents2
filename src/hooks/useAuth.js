@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { localStorageService } from '../lib/localStorage'
 
 export function useAuth() {
     const [user, setUser] = useState(null)
@@ -7,40 +8,30 @@ export function useAuth() {
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        // Vérifier la session actuelle
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setUser(session?.user ?? null)
-            if (session?.user) {
-                fetchProfile(session.user.id)
+        // MODE DÉMO : Vérifier la session localStorage au lieu de Supabase
+        const checkLocalSession = () => {
+            const currentUser = localStorageService.getCurrentUser()
+
+            if (currentUser && currentUser.id) {
+                // Simuler un user Supabase
+                setUser({
+                    id: currentUser.id,
+                    email: currentUser.email
+                })
+                fetchProfile(currentUser.id)
             } else {
                 setLoading(false)
             }
-        })
+        }
 
-        // Écouter les changements d'authentification
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setUser(session?.user ?? null)
-            if (session?.user) {
-                fetchProfile(session.user.id)
-            } else {
-                setProfile(null)
-                setLoading(false)
-            }
-        })
-
-        return () => subscription.unsubscribe()
+        checkLocalSession()
     }, [])
 
     const fetchProfile = async (userId) => {
         try {
-            const { data, error } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', userId)
-                .maybeSingle()
-
-            if (error) throw error
-            setProfile(data)
+            // MODE DÉMO : Charger depuis localStorage
+            const profileData = localStorageService.getProfile(userId)
+            setProfile(profileData)
         } catch (error) {
             console.error('Erreur lors de la récupération du profil:', error)
             setProfile(null)
@@ -66,11 +57,23 @@ export function useAuth() {
             }
         })
 
+        // MODE DÉMO : Stocker la session dans localStorage
+        if (data.user) {
+            localStorageService.setCurrentUser({
+                id: data.user.id,
+                email: data.user.email
+            })
+        }
 
         return { data, error }
     }
 
     const signOut = async () => {
+        // MODE DÉMO : Nettoyer localStorage
+        localStorageService.clearCurrentUser()
+        setUser(null)
+        setProfile(null)
+
         const { error } = await supabase.auth.signOut()
         return { error }
     }

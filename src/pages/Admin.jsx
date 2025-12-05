@@ -10,7 +10,7 @@ export default function Admin({ profile }) {
     const [userProjects, setUserProjects] = useState([])
 
     // Vérifier que l'utilisateur est admin
-    if (!profile || profile.role !== 'Administrateur') {
+    if (!profile || profile.system_role !== 'admin') {
         return <Navigate to="/" />
     }
 
@@ -20,14 +20,15 @@ export default function Admin({ profile }) {
 
     const fetchPendingUsers = async () => {
         try {
-            const { data, error } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('badge_verified', false)
-                .order('created_at', { ascending: false })
+            // MODE DÉMO : Récupérer depuis localStorage
+            const profiles = localStorageService.getAllProfiles()
 
-            if (error) throw error
-            setPendingUsers(data || [])
+            // Filtrer : non validés ET non administrateurs
+            const pending = profiles.filter(p =>
+                p.badge_verified === false && p.system_role !== 'admin'
+            )
+
+            setPendingUsers(pending)
         } catch (error) {
             console.error('Erreur lors de la récupération des utilisateurs:', error)
         } finally {
@@ -139,7 +140,7 @@ export default function Admin({ profile }) {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                                                {user.role}
+                                                {user.system_role === 'admin' ? 'Admin' : 'Utilisateur'}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

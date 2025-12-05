@@ -1,47 +1,50 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Navigate } from 'react-router-dom'
+import { useAuth } from '../hooks/useAuth'
+import InteractiveMap from '../components/map/InteractiveMap'
+import MapFilters from '../components/map/MapFilters'
 
 export default function MapPage({ profile }) {
+    const { user, loading } = useAuth()
+    const [filters, setFilters] = useState({ roles: [], search: '' })
+
     useEffect(() => {
         // Import Leaflet CSS dynamically
         import('leaflet/dist/leaflet.css')
     }, [])
 
-    // Bloquer l'accès si le badge n'est pas vérifié
-    if (!profile?.badge_verified) {
+    // Afficher un loader pendant la vérification de l'authentification
+    if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
-                <div className="max-w-md text-center space-y-4">
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-                        <h2 className="text-2xl font-bold text-gray-900 mb-3">
-                            🔒 Accès restreint
-                        </h2>
-                        <p className="text-gray-700">
-                            Votre profil est en attente de validation. Un administrateur doit
-                            vérifier votre compte avant que vous puissiez accéder à la carte.
-                        </p>
-                        <p className="text-sm text-gray-600 mt-4">
-                            Vous recevrez une notification dès que votre profil sera approuvé.
-                        </p>
-                    </div>
-                </div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
             </div>
         )
     }
 
+    // Rediriger vers la page de connexion si l'utilisateur n'est pas connecté
+    if (!user) {
+        return <Navigate to="/login" replace />
+    }
+
     return (
-        <div className="h-screen flex">
-            <div className="flex-1 relative">
-                {/* La carte Leaflet sera implémentée ici */}
-                <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-                    <div className="text-center">
-                        <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                            Carte Interactive
-                        </h2>
-                        <p className="text-gray-600">
-                            L'intégration Leaflet est en cours de développement...
-                        </p>
-                    </div>
+        <div className="h-screen flex flex-col overflow-hidden">
+            {/* Header de la carte */}
+            <div className="bg-white shadow-sm border-b px-6 py-4 z-10">
+                <h1 className="text-2xl font-bold text-gray-900">Carte des Talents NIRD</h1>
+                <p className="text-sm text-gray-600 mt-1">
+                    Découvrez les professionnels du numérique responsable près de chez vous
+                </p>
+            </div>
+
+            {/* Corps : Filtres + Carte */}
+            <div className="flex-1 flex overflow-hidden">
+                {/* Sidebar Filtres */}
+                <MapFilters onFilterChange={setFilters} />
+
+                {/* Carte */}
+                <div className="flex-1 relative">
+                    <InteractiveMap filters={filters} />
                 </div>
             </div>
         </div>

@@ -1,5 +1,6 @@
 import { Routes, Route } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
+import { SobrietyProvider } from './contexts/SobrietyContext'
 import Layout from './components/layout/Layout'
 import Home from './pages/Home'
 import Register from './pages/auth/Register'
@@ -20,16 +21,18 @@ function App() {
     }
 
     return (
-        <Layout user={user} profile={profile}>
-            <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/map" element={<MapPage profile={profile} />} />
-                <Route path="/dashboard" element={<Dashboard profile={profile} />} />
-                <Route path="/admin" element={<Admin profile={profile} />} />
-            </Routes>
-        </Layout>
+        <SobrietyProvider>
+            <Layout user={user} profile={profile}>
+                <Routes>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/register" element={<Register />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/map" element={<MapPage profile={profile} />} />
+                    <Route path="/dashboard" element={<Dashboard profile={profile} />} />
+                    <Route path="/admin" element={<Admin profile={profile} />} />
+                </Routes>
+            </Layout>
+        </SobrietyProvider>
     )
 }
 

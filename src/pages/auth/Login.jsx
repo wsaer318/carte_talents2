@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
+import { localStorageService } from '../../lib/localStorage'
+import { validateDemoLogin } from '../../lib/demoAccounts'
+import { supabase } from '../../lib/supabase'
 import { LogIn } from 'lucide-react'
 
 export default function Login() {
@@ -27,12 +30,38 @@ export default function Login() {
         setError('')
 
         try {
-            const { error } = await signIn(formData.email, formData.password)
-            if (error) throw error
+            // MODE DÉMO : Vérifier les credentials avec les comptes de démo
+            const demoAuth = validateDemoLogin(formData.email, formData.password)
 
-            navigate('/dashboard')
+            if (demoAuth) {
+                // Connexion réussie avec un compte de démo
+                localStorageService.setCurrentUser(demoAuth.user)
+
+                console.log('✅ Connexion réussie (mode démo):', demoAuth.profile)
+
+                // Redirection
+                window.location.href = '/dashboard'
+            } else {
+                // Aucun compte de démo ne correspond, vérifier dans les profils enregistrés
+                const profiles = localStorageService.getAllProfiles()
+                const userProfile = profiles.find(p => p.email === formData.email)
+
+                if (!userProfile) {
+                    throw new Error('Email ou mot de passe incorrect.')
+                }
+
+                // Pour les comptes créés via inscription (sans mot de passe stocké)
+                // On accepte n'importe quel mot de passe pour la démo
+                localStorageService.setCurrentUser({
+                    id: userProfile.id,
+                    email: userProfile.email
+                })
+
+                console.log('✅ Connexion réussie:', userProfile)
+                window.location.href = '/dashboard'
+            }
         } catch (error) {
-            setError('Email ou mot de passe incorrect')
+            setError(error.message || 'Email ou mot de passe incorrect.')
         } finally {
             setLoading(false)
         }

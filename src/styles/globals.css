@@ -16,7 +16,8 @@ body.sobriety-mode {
     filter: grayscale(100%);
 }
 
-body.sobriety-mode img:not(.logo) {
+/* Masquer les images décoratives mais PAS les éléments Leaflet */
+body.sobriety-mode img:not(.logo):not(.leaflet-tile):not(.leaflet-marker-icon):not(.leaflet-marker-shadow) {
     display: none;
 }
 

@@ -2,7 +2,11 @@ import { useEffect, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
-import { User, Download } from 'lucide-react'
+import { User, Download, Edit2 } from 'lucide-react'
+import CollaborationsList from '../components/collaboration/CollaborationsList'
+import EditSkillsModal from '../components/profile/EditSkillsModal'
+import EditProjectsModal from '../components/profile/EditProjectsModal'
+import { localStorageService } from '../lib/localStorage'
 
 export default function Dashboard({ profile }) {
     const { signOut } = useAuth()
@@ -11,6 +15,8 @@ export default function Dashboard({ profile }) {
     const [languages, setLanguages] = useState([])
     const [passions, setPassions] = useState([])
     const [loading, setLoading] = useState(true)
+    const [editingSkills, setEditingSkills] = useState(false)
+    const [editingProjects, setEditingProjects] = useState(false)
 
     if (!profile) {
         return <Navigate to="/login" />
@@ -22,25 +28,16 @@ export default function Dashboard({ profile }) {
 
     const fetchUserData = async () => {
         try {
-            const userId = profile.id
+            // MODE DÉMO : Récupérer depuis localStorage
+            const profiles = localStorageService.getAllProfiles()
+            const userProfile = profiles.find(p => p.id === profile.id)
 
-            // Récupération parallèle des données
-            const [projectsRes, skillsRes, languagesRes, passionsRes] = await Promise.all([
-                supabase.from('projects').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
-                supabase.from('user_skills').select('*').eq('user_id', userId),
-                supabase.from('user_languages').select('*').eq('user_id', userId),
-                supabase.from('user_passions').select('*').eq('user_id', userId)
-            ])
-
-            if (projectsRes.error) throw projectsRes.error
-            if (skillsRes.error) throw skillsRes.error
-            if (languagesRes.error) throw languagesRes.error
-            if (passionsRes.error) throw passionsRes.error
-
-            setProjects(projectsRes.data || [])
-            setSkills(skillsRes.data || [])
-            setLanguages(languagesRes.data || [])
-            setPassions(passionsRes.data || [])
+            if (userProfile) {
+                setProjects(userProfile.projects || [])
+                setSkills(userProfile.skills || [])
+                setLanguages(userProfile.languages || [])
+                setPassions(userProfile.passions || [])
+            }
         } catch (error) {
             console.error('Erreur lors de la récupération des données:', error)
         } finally {
@@ -73,6 +70,31 @@ export default function Dashboard({ profile }) {
         await signOut()
         window.location.href = '/'
     }
+
+    const handleSaveSkills = (newSkills) => {
+        // Sauvegarder dans localStorage
+        const profiles = localStorageService.getAllProfiles()
+        const updated = profiles.map(p =>
+            p.id === profile.id ? { ...p, skills: newSkills } : p
+        )
+        localStorage.setItem('demo_profiles', JSON.stringify(updated))
+
+        setSkills(newSkills)
+        setEditingSkills(false)
+    }
+
+    const handleSaveProjects = (newProjects) => {
+        // Sauvegarder dans localStorage
+        const profiles = localStorageService.getAllProfiles()
+        const updated = profiles.map(p =>
+            p.id === profile.id ? { ...p, projects: newProjects } : p
+        )
+        localStorage.setItem('demo_profiles', JSON.stringify(updated))
+
+        setProjects(newProjects)
+        setEditingProjects(false)
+    }
+
 
     const totalImpact = projects.reduce((sum, p) => sum + (p.impact_carbone || 0), 0)
 
@@ -110,7 +132,7 @@ export default function Dashboard({ profile }) {
                 <div className="grid md:grid-cols-3 gap-6 mb-8">
                     <div className="bg-white rounded-lg shadow p-6">
                         <h3 className="text-sm font-medium text-gray-500">Rôle</h3>
-                        <p className="text-2xl font-bold text-gray-900 mt-2">{profile.role}</p>
+                        <p className="text-2xl font-bold text-gray-900 mt-2">{profile.village_role}</p>
                     </div>
 
                     <div className="bg-white rounded-lg shadow p-6">
@@ -128,8 +150,15 @@ export default function Dashboard({ profile }) {
 
                 {/* Projects List */}
                 <div className="bg-white rounded-lg shadow mb-8">
-                    <div className="px-6 py-4 border-b border-gray-200">
+                    <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
                         <h2 className="text-xl font-semibold text-gray-900">Mes Projets</h2>
+                        <button
+                            onClick={() => setEditingProjects(true)}
+                            className="flex items-center gap-2 px-3 py-2 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition"
+                        >
+                            <Edit2 className="h-4 w-4" />
+                            Modifier
+                        </button>
                     </div>
                     <div className="p-6">
                         {loading ? (
@@ -138,9 +167,9 @@ export default function Dashboard({ profile }) {
                             <p className="text-gray-500">Aucun projet pour le moment</p>
                         ) : (
                             <div className="space-y-4">
-                                {projects.map((project) => (
+                                {projects.map((project, idx) => (
                                     <div
-                                        key={project.id}
+                                        key={project.id || `project-${idx}`}
                                         className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition"
                                     >
                                         <h3 className="text-lg font-semibold text-gray-900">
@@ -149,7 +178,7 @@ export default function Dashboard({ profile }) {
                                         <p className="text-gray-600 mt-2">{project.description}</p>
                                         <div className="mt-3 flex items-center justify-between">
                                             <span className="text-sm text-gray-500">
-                                                {new Date(project.created_at).toLocaleDateString('fr-FR')}
+                                                {project.created_at ? new Date(project.created_at).toLocaleDateString('fr-FR') : 'Date inconnue'}
                                             </span>
                                             <span className="text-sm font-medium text-green-600">
                                                 {project.impact_carbone} kg CO₂ économisés
@@ -166,8 +195,15 @@ export default function Dashboard({ profile }) {
                 <div className="grid md:grid-cols-2 gap-6 mb-8">
                     {/* Compétences & Langues */}
                     <div className="bg-white rounded-lg shadow">
-                        <div className="px-6 py-4 border-b border-gray-200">
+                        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
                             <h2 className="text-xl font-semibold text-gray-900">Mes Talents</h2>
+                            <button
+                                onClick={() => setEditingSkills(true)}
+                                className="flex items-center gap-2 px-3 py-2 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition"
+                            >
+                                <Edit2 className="h-4 w-4" />
+                                Modifier
+                            </button>
                         </div>
                         <div className="p-6 space-y-6">
                             <div>
@@ -210,6 +246,11 @@ export default function Dashboard({ profile }) {
                     </div>
                 </div>
 
+                {/* Collaborations */}
+                <div className="mb-8">
+                    <CollaborationsList userId={profile.id} />
+                </div>
+
                 {/* Actions */}
                 <div className="flex flex-col sm:flex-row gap-4">
                     <button
@@ -228,6 +269,23 @@ export default function Dashboard({ profile }) {
                     </button>
                 </div>
             </div>
+
+            {/* Modales d'édition */}
+            {editingSkills && (
+                <EditSkillsModal
+                    skills={skills}
+                    onSave={handleSaveSkills}
+                    onClose={() => setEditingSkills(false)}
+                />
+            )}
+
+            {editingProjects && (
+                <EditProjectsModal
+                    projects={projects}
+                    onSave={handleSaveProjects}
+                    onClose={() => setEditingProjects(false)}
+                />
+            )}
         </div>
     )
 }

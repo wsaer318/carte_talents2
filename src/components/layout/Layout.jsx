@@ -1,11 +1,19 @@
-import { Link } from 'react-router-dom'
-import { Leaf, Menu, X } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
+import { Leaf, Menu, X, LogOut } from 'lucide-react'
 import { useState } from 'react'
-import { useSobrietyMode } from '../../hooks/useSobrietyMode'
+import { useSobriety } from '../../contexts/SobrietyContext'
+import { useAuth } from '../../hooks/useAuth'
 
 export default function Layout({ children, user, profile }) {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-    const { sobrietyMode, toggleSobrietyMode } = useSobrietyMode(user?.id)
+    const { sobrietyMode, toggleSobriety } = useSobriety()
+    const { signOut } = useAuth()
+    const navigate = useNavigate()
+
+    const handleLogout = async () => {
+        await signOut()
+        navigate('/')
+    }
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
@@ -45,7 +53,7 @@ export default function Layout({ children, user, profile }) {
                                     Tableau de bord
                                 </Link>
                             )}
-                            {profile?.role === 'Administrateur' && (
+                            {profile?.system_role === 'admin' && (
                                 <Link
                                     to="/admin"
                                     className="text-gray-700 hover:text-primary-600 transition"
@@ -53,29 +61,29 @@ export default function Layout({ children, user, profile }) {
                                     Admin
                                 </Link>
                             )}
-                            {!user && (
-                                <>
-                                    <Link
-                                        to="/login"
-                                        className="text-gray-700 hover:text-primary-600 transition"
-                                    >
-                                        Connexion
-                                    </Link>
-                                    <Link
-                                        to="/register"
-                                        className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition"
-                                    >
-                                        Rejoindre
-                                    </Link>
-                                </>
+                            {!user ? (
+                                <Link
+                                    to="/register"
+                                    className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition"
+                                >
+                                    Rejoindre
+                                </Link>
+                            ) : (
+                                <button
+                                    onClick={handleLogout}
+                                    className="text-gray-700 hover:text-red-600 transition flex items-center space-x-1"
+                                >
+                                    <LogOut className="h-4 w-4" />
+                                    <span>Déconnexion</span>
+                                </button>
                             )}
 
                             {/* Toggle Mode Sobriété */}
                             <button
-                                onClick={toggleSobrietyMode}
+                                onClick={toggleSobriety}
                                 className={`p-2 rounded-lg transition ${sobrietyMode
-                                        ? 'bg-gray-800 text-white'
-                                        : 'bg-green-100 text-green-700 hover:bg-green-200'
+                                    ? 'bg-gray-800 text-white'
+                                    : 'bg-green-100 text-green-700 hover:bg-green-200'
                                     }`}
                                 title="Mode Sobriété"
                             >
@@ -124,7 +132,7 @@ export default function Layout({ children, user, profile }) {
                                     Tableau de bord
                                 </Link>
                             )}
-                            {profile?.role === 'Administrateur' && (
+                            {profile?.system_role === 'admin' && (
                                 <Link
                                     to="/admin"
                                     className="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded"
@@ -133,6 +141,30 @@ export default function Layout({ children, user, profile }) {
                                     Admin
                                 </Link>
                             )}
+
+                            <div className="border-t pt-2">
+                                {!user ? (
+                                    <Link
+                                        to="/register"
+                                        className="block px-4 py-2 bg-primary-600 text-white hover:bg-primary-700 rounded mx-2 my-2 text-center"
+                                        onClick={() => setMobileMenuOpen(false)}
+                                    >
+                                        Rejoindre
+                                    </Link>
+                                ) : (
+                                    <button
+                                        onClick={() => {
+                                            handleLogout()
+                                            setMobileMenuOpen(false)
+                                        }}
+                                        className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 rounded flex items-center space-x-2"
+                                    >
+                                        <LogOut className="h-5 w-5" />
+                                        <span>Déconnexion</span>
+                                    </button>
+                                )}
+                            </div>
+
                             <button
                                 onClick={toggleSobrietyMode}
                                 className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 rounded flex items-center space-x-2"
