@@ -150,7 +150,14 @@ export default function Register() {
 
             if (signUpError) throw signUpError
 
-            if (data.user) {
+            if (data.user && data.session) {
+                // CRITIQUE: Établir explicitement la session dans le client Supabase
+                // pour que auth.uid() fonctionne dans l'appel RPC
+                await supabase.auth.setSession({
+                    access_token: data.session.access_token,
+                    refresh_token: data.session.refresh_token
+                })
+
                 // Préparation des données pour l'RPC
                 const rpcData = {
                     p_nom: formData.nom,

@@ -80,31 +80,52 @@ ALTER TABLE public.user_languages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_passions ENABLE ROW LEVEL SECURITY;
 
 -- Policies PROFILES
+DROP POLICY IF EXISTS "Public profiles are viewable by everyone" ON public.profiles;
 CREATE POLICY "Public profiles are viewable by everyone" ON public.profiles FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
 CREATE POLICY "Users can update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
 
 -- Policies PROJECTS
+-- Policies PROJECTS
+DROP POLICY IF EXISTS "Public projects are viewable by everyone" ON public.projects;
 CREATE POLICY "Public projects are viewable by everyone" ON public.projects FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Users can insert own projects" ON public.projects;
 CREATE POLICY "Users can insert own projects" ON public.projects FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can update own projects" ON public.projects;
 CREATE POLICY "Users can update own projects" ON public.projects FOR UPDATE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can delete own projects" ON public.projects;
 CREATE POLICY "Users can delete own projects" ON public.projects FOR DELETE USING (auth.uid() = user_id);
 
 -- Policies SKILL_REFS
+-- Policies SKILL_REFS
+DROP POLICY IF EXISTS "Public skills are viewable by everyone" ON public.skill_refs;
 CREATE POLICY "Public skills are viewable by everyone" ON public.skill_refs FOR SELECT USING (true);
 
 -- Policies USER_SKILLS
+-- Policies USER_SKILLS
+DROP POLICY IF EXISTS "Public user_skills are viewable by everyone" ON public.user_skills;
 CREATE POLICY "Public user_skills are viewable by everyone" ON public.user_skills FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Users can insert own skills" ON public.user_skills;
 CREATE POLICY "Users can insert own skills" ON public.user_skills FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can delete own skills" ON public.user_skills;
 CREATE POLICY "Users can delete own skills" ON public.user_skills FOR DELETE USING (auth.uid() = user_id);
 
 -- Policies USER_LANGUAGES
+-- Policies USER_LANGUAGES
+DROP POLICY IF EXISTS "Public languages" ON public.user_languages;
 CREATE POLICY "Public languages" ON public.user_languages FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Insert own languages" ON public.user_languages;
 CREATE POLICY "Insert own languages" ON public.user_languages FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Delete own languages" ON public.user_languages;
 CREATE POLICY "Delete own languages" ON public.user_languages FOR DELETE USING (auth.uid() = user_id);
 
 -- Policies USER_PASSIONS
+-- Policies USER_PASSIONS
+DROP POLICY IF EXISTS "Public passions" ON public.user_passions;
 CREATE POLICY "Public passions" ON public.user_passions FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Insert own passions" ON public.user_passions;
 CREATE POLICY "Insert own passions" ON public.user_passions FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Delete own passions" ON public.user_passions;
 CREATE POLICY "Delete own passions" ON public.user_passions FOR DELETE USING (auth.uid() = user_id);
 
 -- ==========================================
@@ -151,18 +172,22 @@ CREATE OR REPLACE FUNCTION public.update_full_profile(
 RETURNS VOID AS $$
 DECLARE
   v_user_id UUID;
+  v_email TEXT;
 BEGIN
-  -- Récupérer l'ID de l'utilisateur courant
-  v_user_id := auth.uid();
+  -- Récupérer l'ID et l'EMAIL de l'utilisateur courant
+  SELECT id, email INTO v_user_id, v_email
+  FROM auth.users
+  WHERE id = auth.uid();
   
   IF v_user_id IS NULL THEN
     RAISE EXCEPTION 'Non authentifié';
   END IF;
 
-  -- 1. Mettre à jour le profil
-  UPDATE public.profiles
-  SET nom = p_nom, prenom = p_prenom, role = p_role, updated_at = NOW()
-  WHERE id = v_user_id;
+  -- 1. Mettre à jour le profil (ou le créer s'il n'existe pas - Fallback Trigger)
+  INSERT INTO public.profiles (id, email, nom, prenom, role, updated_at)
+  VALUES (v_user_id, v_email, p_nom, p_prenom, p_role, NOW())
+  ON CONFLICT (id) DO UPDATE
+  SET email = EXCLUDED.email, nom = EXCLUDED.nom, prenom = EXCLUDED.prenom, role = EXCLUDED.role, updated_at = NOW();
 
   -- 2. Insérer les compétences
   IF p_skills IS NOT NULL AND jsonb_array_length(p_skills) > 0 THEN

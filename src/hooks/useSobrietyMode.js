@@ -25,7 +25,7 @@ export function useSobrietyMode(userId) {
                 .from('profiles')
                 .select('preferences')
                 .eq('id', userId)
-                .single()
+                .maybeSingle()
 
             if (error) throw error
 
@@ -35,6 +35,7 @@ export function useSobrietyMode(userId) {
             localStorage.setItem('sobriety-mode', mode.toString())
         } catch (error) {
             console.error('Erreur lors du chargement des préférences:', error)
+            // Fallback to localStorage if DB fetch fails
         }
     }
 

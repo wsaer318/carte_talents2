@@ -37,12 +37,13 @@ export function useAuth() {
                 .from('profiles')
                 .select('*')
                 .eq('id', userId)
-                .single()
+                .maybeSingle()
 
             if (error) throw error
             setProfile(data)
         } catch (error) {
             console.error('Erreur lors de la récupération du profil:', error)
+            setProfile(null)
         } finally {
             setLoading(false)
         }
