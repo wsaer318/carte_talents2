@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
+import { supabase } from '../../lib/supabase'
 import { UserPlus } from 'lucide-react'
 
 export default function Register() {
@@ -32,21 +33,35 @@ export default function Register() {
         setError('')
 
         try {
-            const { data, error } = await signUp(
+            // 1. Inscription Auth (sans userData pour éviter que useAuth ne crée le profil)
+            const { data, error: signUpError } = await signUp(
                 formData.email,
-                formData.password,
-                {
-                    nom: formData.nom,
-                    prenom: formData.prenom,
-                    role: formData.role,
-                    badge_verified: false,
-                }
+                formData.password
             )
 
-            if (error) throw error
+            if (signUpError) throw signUpError
 
-            // Créer le premier projet (obligatoire)
             if (data.user) {
+                // 2. Création du profil
+                const { error: profileError } = await supabase
+                    .from('profiles')
+                    .insert([
+                        {
+                            id: data.user.id,
+                            email: formData.email,
+                            nom: formData.nom,
+                            prenom: formData.prenom,
+                            role: formData.role,
+                            badge_verified: false,
+                        }
+                    ])
+
+                if (profileError) {
+                    console.error('Erreur création profil:', profileError)
+                    throw new Error("Erreur lors de la création du profil: " + profileError.message)
+                }
+
+                // 3. Création du projet
                 const { error: projectError } = await supabase
                     .from('projects')
                     .insert([
@@ -59,12 +74,14 @@ export default function Register() {
                     ])
 
                 if (projectError) {
-                    console.error('Erreur lors de la création du projet:', projectError)
+                    console.error('Erreur création projet:', projectError)
+                    // Pas bloquant
                 }
             }
 
-            navigate('/waiting-approval')
+            navigate('/dashboard')
         } catch (error) {
+            console.error('Erreur inscription:', error)
             setError(error.message)
         } finally {
             setLoading(false)
@@ -101,6 +118,7 @@ export default function Register() {
                                 id="email"
                                 name="email"
                                 type="email"
+                                autoComplete="email"
                                 required
                                 value={formData.email}
                                 onChange={handleChange}
@@ -117,6 +135,7 @@ export default function Register() {
                                 id="password"
                                 name="password"
                                 type="password"
+                                autoComplete="new-password"
                                 required
                                 value={formData.password}
                                 onChange={handleChange}
