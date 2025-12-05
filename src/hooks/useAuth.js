@@ -62,23 +62,6 @@ export function useAuth() {
             password,
         })
 
-        if (data.user && !error && userData) {
-            // Créer le profil utilisateur uniquement si userData est fourni
-            const { error: profileError } = await supabase
-                .from('profiles')
-                .insert([
-                    {
-                        id: data.user.id,
-                        email,
-                        ...userData,
-                    },
-                ])
-
-            if (profileError) {
-                console.error('Erreur lors de la création du profil:', profileError)
-                return { data, error: profileError }
-            }
-        }
 
         return { data, error }
     }
